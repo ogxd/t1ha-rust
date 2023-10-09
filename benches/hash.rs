@@ -94,6 +94,18 @@ fn get_aligned_data() -> &'static [u8] {
     slice
 }
 
+const FNV_PRIME: u32 = 16777619;
+const FNV_OFFSET_BASIS: u32 = 2166136261;
+
+fn fnv1a_32(data: &[u8]) -> u32 {
+    let mut hash = FNV_OFFSET_BASIS;
+    for byte in data {
+        hash ^= *byte as u32;
+        hash = hash.wrapping_mul(FNV_PRIME);
+    }
+    hash
+}
+
 fn bench_hash32(c: &mut Criterion) {
 
     let data = get_aligned_data();
@@ -107,29 +119,32 @@ fn bench_hash32(c: &mut Criterion) {
             },
             &PARAMS,
         )
-        .with_function("murmur3_32", move |b, &&size| {
-            b.iter(|| {
-                let mut r = BufReader::new(&data[..size]);
+        // .with_function("murmur3_32", move |b, &&size| {
+        //     b.iter(|| {
+        //         let mut r = BufReader::new(&data[..size]);
 
-                murmur3_32(&mut r, SEED as u32)
-            });
+        //         murmur3_32(&mut r, SEED as u32)
+        //     });
+        // })
+        .with_function("fnv1a32", move |b, &&size| {
+            b.iter(|| fnv1a_32(&data[..size]));
         })
-        .with_function("farmhash32", move |b, &&size| {
-            b.iter(|| farmhash32(&data[..size], SEED as u32));
-        })
+        // .with_function("farmhash32", move |b, &&size| {
+        //     b.iter(|| farmhash32(&data[..size], SEED as u32));
+        // })
         .with_function("xxhash32", move |b, &&size| {
             b.iter(|| xxhash32(&data[..size], SEED as u32));
         })
-        .with_function("twox_hash::XxHash32", move |b, &&size| {
-            b.iter(|| {
-                let mut h = XxHash32::with_seed(SEED as u32);
-                h.write(&data[..size]);
-                h.finish()
-            });
-        })
-        .with_function("fxhash32", move |b, &&size| {
-            b.iter(|| fxhash32(&data[..size]));
-        })
+        // .with_function("twox_hash::XxHash32", move |b, &&size| {
+        //     b.iter(|| {
+        //         let mut h = XxHash32::with_seed(SEED as u32);
+        //         h.write(&data[..size]);
+        //         h.finish()
+        //     });
+        // })
+        // .with_function("fxhash32", move |b, &&size| {
+        //     b.iter(|| fxhash32(&data[..size]));
+        // })
         .throughput(|&&size| Throughput::Bytes(size as u32)),
     );
 }
