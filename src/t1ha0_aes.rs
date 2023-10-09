@@ -171,6 +171,7 @@ pub fn t1ha0_ia32aes(data: &[u8], seed: u64) -> u64 {
     any(target_arch = "x86", target_arch = "x86_64"),
     target_feature = "avx2"
 ))]
+#[inline]
 pub fn t1ha0_ia32aes_avx2(data: &[u8], seed: u64) -> u64 {
     let mut len = data.len();
     let mut a = seed;
